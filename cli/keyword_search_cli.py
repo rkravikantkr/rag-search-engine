@@ -6,6 +6,13 @@ import string
 from pathlib import Path
 
 data_file_path = Path(__file__).parents[1].joinpath("data", "movies.json")
+stopwords_file_path = Path(__file__).parents[1].joinpath("data", "stopwords.txt")
+
+
+def load_stopwords() -> list:
+    """Read stopwords file"""
+    with open(stopwords_file_path, "r") as f:
+        return f.read().splitlines()
 
 
 def load_movies_data() -> list:
@@ -33,12 +40,23 @@ def remove_punctuation(text) -> str:
     return text.translate(translator)
 
 
+def filter_text(text: list) -> list:
+    stopwords = load_stopwords()
+    """Remove any stopwords from the user query tokens and title tokens before matching"""
+    filtered_text = [t for t in text if t not in stopwords]
+    return filtered_text
+
+
 def match_token(query, title) -> bool:
     """Allow matches where at least one token from query matches any part of token from title."""
 
     """Tokenized query and title string"""
     query = tokenize(remove_punctuation(query).lower())
     title = tokenize(remove_punctuation(title).lower())
+
+    """Filter query and title tokens"""
+    query = filter_text(query)
+    title = filter_text(title)
 
     """partial or full matching query tokens"""
     query_tokens = [q for q in query for t in title if q in t]
