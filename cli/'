@@ -25,6 +25,12 @@ def tokenize(text) -> list:
     return text.split()
 
 
+def match_token(query, title) -> bool:
+    """Allow matches where at least one token from query matches any part of token from title."""
+    tok_query = tokenize(query)
+    tok_title = tokenize(title)
+
+
 def remove_punctuation(text) -> str:
     """Removes all standard ASCII punctuation from a string."""
     # Create a translation table where all punctuation characters are mapped to None
@@ -33,30 +39,15 @@ def remove_punctuation(text) -> str:
     return text.translate(translator)
 
 
-def match_token(query, title) -> bool:
-    """Allow matches where at least one token from query matches any part of token from title."""
-
-    """Tokenized query and title string"""
-    query = tokenize(remove_punctuation(query).lower())
-    title = tokenize(remove_punctuation(title).lower())
-
-    """partial or full matching query tokens"""
-    query_tokens = [q for q in query for t in title if q in t]
-
-    return len(query_tokens) != 0
-
-
 def keyword_search(query) -> list:
 
     titles = load_movies_data()
+    """ cleaned punctuation query """
+    query = remove_punctuation(query)
 
     """ search for title containing search query """
     results = [
-        title
-        for title in titles
-        if match_token(
-            remove_punctuation(query).lower(), remove_punctuation(title).lower()
-        )
+        title for title in titles if query.lower() in remove_punctuation(title).lower()
     ]
     return results
 
