@@ -5,6 +5,10 @@ import json
 import string
 from pathlib import Path
 
+from nltk.stem import PorterStemmer
+
+stemmer = PorterStemmer()
+
 data_file_path = Path(__file__).parents[1].joinpath("data", "movies.json")
 stopwords_file_path = Path(__file__).parents[1].joinpath("data", "stopwords.txt")
 
@@ -57,6 +61,10 @@ def match_token(query, title) -> bool:
     """Filter query and title tokens"""
     query = filter_text(query)
     title = filter_text(title)
+
+    """Reduce each token to its root(stemmed form)"""
+    query = [stemmer.stem(token) for token in query]
+    title = [stemmer.stem(token) for token in title]
 
     """partial or full matching query tokens"""
     query_tokens = [q for q in query for t in title if q in t]
