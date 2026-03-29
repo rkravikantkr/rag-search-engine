@@ -1,5 +1,7 @@
 #large data files
 /data/
+# generated files
+cache/
 # Python-generated files
 __pycache__/
 *.py[oc]

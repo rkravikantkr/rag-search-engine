@@ -1,5 +1,8 @@
 import json
+import os
+import pickle
 import string
+from collections import defaultdict
 from pathlib import Path
 
 from nltk.stem import PorterStemmer
@@ -8,6 +11,45 @@ stemmer = PorterStemmer()
 
 data_file_path = Path(__file__).parents[2].joinpath("data", "movies.json")
 stopwords_file_path = Path(__file__).parents[2].joinpath("data", "stopwords.txt")
+
+
+class InvertedIndex:
+    def __init__(self):
+        """index attribute: a dictionary mapping tokens(strings) to sets of docs IDs(integers)"""
+        self.index = defaultdict(set)
+
+        """docmap attribute: a mapping document IDs to their full document object(each movie is a dict)"""
+        self.docmap = {}
+
+    def __add_document(self, doc_id, text):
+        """Tokenize the input text, then add each token to the index with the doc ID"""
+        tokens = tokenize(text)
+        for token in tokens:
+            self.index[token.lower()].add(doc_id)
+
+    def get_documents(self, term):  # return a list of doc ids
+        """Get the doc IDs for a given token and return as a list, sorted in ascending order"""
+        term = term.lower()
+        return sorted(self.index[term])
+
+    def build(self):
+        """Iterate over all the movies and add them to both index and docmap"""
+        with open(data_file_path, "r") as f:
+            data = json.load(f)
+        movies = data["movies"]
+
+        doc_ids = [m["id"] for m in movies]
+        self.docmap = dict(zip(doc_ids, movies))
+
+        for m in movies:
+            self.__add_document(doc_id=m["id"], text=f"{m['title']} {m['description']}")
+
+    def save(self):
+        os.makedirs("./cache", exist_ok=True)
+        with open("./cache/index.pkl", "wb") as f:  # "wb" write binary
+            pickle.dump(self.index, f)
+        with open("./cache/docmap.pkl", "wb") as f:  # "rb" read binary
+            pickle.dump(self.docmap, f)
 
 
 def load_stopwords() -> list:
