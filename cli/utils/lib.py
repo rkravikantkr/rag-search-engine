@@ -21,16 +21,16 @@ class InvertedIndex:
         """docmap attribute: a mapping document IDs to their full document object(each movie is a dict)"""
         self.docmap = {}
 
+    # method to populate index
     def __add_document(self, doc_id, text):
         """Tokenize the input text, then add each token to the index with the doc ID"""
         tokens = tokenize(text)
         for token in tokens:
-            self.index[token.lower()].add(doc_id)
+            self.index[token].add(doc_id)
 
-    def get_documents(self, term):  # return a list of doc ids
+    def get_documents(self, term) -> list:  # return a list of doc ids
         """Get the doc IDs for a given token and return as a list, sorted in ascending order"""
-        term = term.lower()
-        return sorted(self.index[term])
+        return sorted(self.index[term.lower()])
 
     def build(self):
         """Iterate over all the movies and add them to both index and docmap"""
@@ -48,8 +48,19 @@ class InvertedIndex:
         os.makedirs("./cache", exist_ok=True)
         with open("./cache/index.pkl", "wb") as f:  # "wb" write binary
             pickle.dump(self.index, f)
-        with open("./cache/docmap.pkl", "wb") as f:  # "rb" read binary
+        with open("./cache/docmap.pkl", "wb") as f:
             pickle.dump(self.docmap, f)
+
+    def load(self):
+        if not os.path.exists("./cache/index.pkl") or not os.path.exists(
+            "./cache/docmap.pkl"
+        ):
+            raise FileNotFoundError("Cache not found. Run 'build' command first.")
+
+        with open("./cache/index.pkl", "rb") as f:  # "rb" read binary
+            self.index = pickle.load(f)
+        with open("./cache/docmap.pkl", "rb") as f:
+            self.docmap = pickle.load(f)
 
 
 def load_stopwords() -> list:
@@ -72,7 +83,9 @@ def load_movies_data() -> list:
 
 
 def tokenize(text) -> list:
-    return text.split()
+    text = remove_punctuation(text.lower())  # 1. clean
+    tokens = text.split()  # 2. split into words
+    return [stemmer.stem(token) for token in tokens]  # 3. stem each token
 
 
 def remove_punctuation(text) -> str:
@@ -111,16 +124,16 @@ def match_token(query, title) -> bool:
     return len(query_tokens) != 0
 
 
-def keyword_search(query) -> list:
+def keyword_search(query, inverted_index) -> list:
+    results = []
+    tokens = tokenize(query)
 
-    titles = load_movies_data()
+    for token in tokens:
+        # 1. get doc IDs for this token
+        doc_ids = inverted_index.get_documents(token)
 
-    """ search for title containing search query """
-    results = [
-        title
-        for title in titles
-        if match_token(
-            remove_punctuation(query).lower(), remove_punctuation(title).lower()
-        )
-    ]
-    return results
+        # 2. for each doc ID, get the full document from docmap
+        for id in doc_ids:
+            results.append(inverted_index.docmap[id])
+            if len(results) >= 5:
+                return results

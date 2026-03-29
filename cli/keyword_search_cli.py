@@ -1,6 +1,7 @@
 #!/usr/bin/env python3
 
 import argparse
+import sys
 
 from utils.lib import InvertedIndex, keyword_search
 
@@ -21,17 +22,23 @@ def main() -> None:
 
     match args.command:
         case "search":
+            try:
+                # load the index
+                inverted_index.load()
+            except FileNotFoundError:
+                print("Error: Cache not found. Run 'build' command first.")
+                sys.exit(1)  # stop the program
+
             print(f"Searching for: {args.query}\n")
-            for *_, title in enumerate(keyword_search(args.query)):
-                print(f"{title}")
+
+            for doc in keyword_search(args.query, inverted_index):
+                print(f"{doc['title']} {doc['id']}")
 
         case "build":
             print("building inverted index")
             inverted_index.build()
             inverted_index.save()
-            print(
-                f"First document for 'merida': {inverted_index.get_documents('merida')[0]}"
-            )
+            print("build successful!")
 
         case _:
             parser.print_help()
