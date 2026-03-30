@@ -1,9 +1,10 @@
 #!/usr/bin/env python3
 
 import argparse
+import math
 import sys
 
-from utils.lib import InvertedIndex, keyword_search
+from utils.lib import InvertedIndex, keyword_search, tokenize
 
 # instance / object of InvertedIndex class
 inverted_index = InvertedIndex()
@@ -22,6 +23,9 @@ def main() -> None:
     tf_parser.add_argument("doc_id", type=int, help="require document id")
     tf_parser.add_argument("term", type=str, help="require a term")
 
+    idf_parser = subparsers.add_parser("idf", help="inverse document frequency")
+    idf_parser.add_argument("term", type=str, help="require a term")
+
     args = parser.parse_args()
 
     match args.command:
@@ -39,15 +43,27 @@ def main() -> None:
                 print(f"{doc['title']} {doc['id']}")
 
         case "build":
-            print("building inverted index")
             inverted_index.build()
             inverted_index.save()
-            print("build successful!")
 
         case "tf":
             inverted_index.load()
             # 0 is printed when term doesn't exist,
             print(inverted_index.get_tf(args.doc_id, args.term))
+
+        case "idf":
+            # load index and docmap
+            inverted_index.load()
+            # calculate idf_value for given term
+            term = args.term
+            # print(tokenize(term))
+            # print(len(inverted_index.index[tokenize(term)[0]]))
+
+            idf_value = math.log(
+                (len(inverted_index.docmap) + 1)
+                / (len(inverted_index.index[tokenize(args.term)[0]]) + 1)
+            )
+            print(f"Inverse document frequency of '{args.term}': {idf_value:.2f}")
 
         case _:
             parser.print_help()

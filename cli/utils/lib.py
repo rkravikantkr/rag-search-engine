@@ -39,15 +39,10 @@ class InvertedIndex:
     def get_tf(self, doc_id, term):
         """returns freq of a token in the doc of given doc_id"""
         token = tokenize(term)
-        #
-        # print("\n____________")
-        # print(tokenize("bear"))
-        # print(tokenize("trapper"))
-        # print(self.term_frequencies[424])
-        # print("_____________\n")
-        #
+
         if len(token) > 1:
             raise ValueError("term cannot be of two words")
+
         return self.term_frequencies[doc_id][token[0]]
 
     def get_documents(self, term) -> list:  # return a list of doc ids
