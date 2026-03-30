@@ -2,6 +2,7 @@ import json
 import os
 import pickle
 import string
+from collections import Counter  # defaultdict takes a factory function
 from collections import defaultdict
 from pathlib import Path
 
@@ -16,10 +17,15 @@ stopwords_file_path = Path(__file__).parents[2].joinpath("data", "stopwords.txt"
 class InvertedIndex:
     def __init__(self):
         """index attribute: a dictionary mapping tokens(strings) to sets of docs IDs(integers)"""
-        self.index = defaultdict(set)
+        self.index = defaultdict(set)  # # calls set() for new keys → empty set
 
         """docmap attribute: a mapping document IDs to their full document object(each movie is a dict)"""
         self.docmap = {}
+
+        """term frequencies: dictionary document IDs to Counter objects"""
+        self.term_frequencies = defaultdict(
+            Counter
+        )  # calls Counter() for new keys → empty Counter
 
     # method to populate index
     def __add_document(self, doc_id, text):
@@ -27,6 +33,22 @@ class InvertedIndex:
         tokens = tokenize(text)
         for token in tokens:
             self.index[token].add(doc_id)
+            # increment a vaule count in Counter dict
+            self.term_frequencies[doc_id][token] += 1
+
+    def get_tf(self, doc_id, term):
+        """returns freq of a token in the doc of given doc_id"""
+        token = tokenize(term)
+        #
+        # print("\n____________")
+        # print(tokenize("bear"))
+        # print(tokenize("trapper"))
+        # print(self.term_frequencies[424])
+        # print("_____________\n")
+        #
+        if len(token) > 1:
+            raise ValueError("term cannot be of two words")
+        return self.term_frequencies[doc_id][token[0]]
 
     def get_documents(self, term) -> list:  # return a list of doc ids
         """Get the doc IDs for a given token and return as a list, sorted in ascending order"""
@@ -50,10 +72,14 @@ class InvertedIndex:
             pickle.dump(self.index, f)
         with open("./cache/docmap.pkl", "wb") as f:
             pickle.dump(self.docmap, f)
+        with open("./cache/term_frequencies.pkl", "wb") as f:
+            pickle.dump(self.term_frequencies, f)
 
     def load(self):
-        if not os.path.exists("./cache/index.pkl") or not os.path.exists(
-            "./cache/docmap.pkl"
+        if (
+            not os.path.exists("./cache/index.pkl")
+            or not os.path.exists("./cache/docmap.pkl")
+            or not os.path.exists("./cache/term_frequencies.pkl")
         ):
             raise FileNotFoundError("Cache not found. Run 'build' command first.")
 
@@ -61,6 +87,8 @@ class InvertedIndex:
             self.index = pickle.load(f)
         with open("./cache/docmap.pkl", "rb") as f:
             self.docmap = pickle.load(f)
+        with open("./cache/term_frequencies.pkl", "rb") as f:
+            self.term_frequencies = pickle.load(f)
 
 
 def load_stopwords() -> list:
